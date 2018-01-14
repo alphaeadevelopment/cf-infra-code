@@ -1,0 +1,225 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Resources": {
+        "LaunchConfiguration": {
+            "Type": "AWS::AutoScaling::LaunchConfiguration",
+            "Properties": {
+                "ImageId": { "Ref": "Ami" },
+                "KeyName": "IrelandKeyPair",
+                "SecurityGroups": [
+                    "sg-294d7e52",
+                    "sg-45ece43e"
+                ],
+                "InstanceType": { "Ref": "InstanceType" },
+                "InstanceMonitoring": false,
+                "IamInstanceProfile": { "Ref": "IamRole" },
+                "EbsOptimized": false,
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash\n",
+                                "aws s3 cp s3://alphaea-uk-scripts/",
+                                { "Ref": "BootstrapScriptName" },
+                                " /bootstrap.sh\n",
+                                "chmod 700 /bootstrap.sh\n",
+                                "/bootstrap.sh\n"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "AutoScalingGroup": {
+            "Type": "AWS::AutoScaling::AutoScalingGroup",
+            "Properties": {
+                "LaunchConfigurationName": {
+                    "Ref": "LaunchConfiguration"
+                },
+                "TargetGroupARNs": [
+                    {
+                        "Ref": "TargetGroup"
+                    }
+                ],
+                "MaxSize": 2,
+                "MinSize": 2,
+                "DesiredCapacity": 2,
+                "Cooldown": 300,
+                "AvailabilityZones": { "Fn::GetAZs" : { "Ref" : "AWS::Region" } },
+                "HealthCheckType": "EC2",
+                "HealthCheckGracePeriod": 300,
+                "Tags": [
+                    {
+                        "Key": "AccessKey",
+                        "Value": { "Ref": "AccessKey" },
+                        "PropagateAtLaunch": true
+                    },
+                    {
+                        "Key": "ArtifactId",
+                        "Value": { "Ref": "ArtifactId" },
+                        "PropagateAtLaunch": true
+                    },
+                    {
+                        "Key": "ArtifactVersion",
+                        "Value": { "Ref": "ArtifactVersion" },
+                        "PropagateAtLaunch": true
+                    },
+                    {
+                        "Key": "Env",
+                        "Value": "native",
+                        "PropagateAtLaunch": true
+                    },
+                    {
+                        "Key": "GroupId",
+                        "Value": { "Ref": "GroupId" },
+                        "PropagateAtLaunch": true
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": { "Fn::Join": [ "-", [
+                      		{ "Ref": "ArtifactId" },
+                       		{ "Ref": "Env" }
+                       	] ] },
+                        "PropagateAtLaunch": true
+                    },
+                    {
+                        "Key": "SecretKey",
+                        "Value": { "Ref": "SecretKey" },
+                        "PropagateAtLaunch": true
+                    }
+                ],
+                "TerminationPolicies": [
+                    "Default"
+                ]
+            }
+        },
+        "TargetGroup": {
+            "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+            "Properties": {
+                "Port": { "Ref" : "InstancePort" },
+                "Protocol": "HTTP",
+            	"VpcId": "vpc-6bc5d80c",
+	            "HealthCheckProtocol": "HTTP",
+	            "HealthCheckPort": "traffic-port",
+	            "HealthCheckIntervalSeconds": 30,
+	            "HealthCheckTimeoutSeconds": 5,
+	            "HealthyThresholdCount": 5,
+	            "UnhealthyThresholdCount": 2,
+	            "HealthCheckPath": "/",
+	            "Matcher": {
+	                "HttpCode": "200,404"
+	            },
+	            "TargetType": "instance"
+	        }
+        },
+        "LoadBalancer": {
+            "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+            "Properties": {
+                "Scheme": "internet-facing",
+                "Type": "application",
+                "Subnets": [
+                	"subnet-2f787d48",
+                	"subnet-4191d71a",
+                	"subnet-9b2a24d2"
+                ],
+                "SecurityGroups": [
+                    "sg-624c0219"
+                ],
+                "IpAddressType": "ipv4"
+            }
+        },
+        "Listener": {
+            "Type": "AWS::ElasticLoadBalancingV2::Listener",
+            "Properties": {
+                "LoadBalancerArn": {
+                    "Ref": "LoadBalancer"
+                },
+                "Port": 80,
+                "Protocol": "HTTP",
+                "DefaultActions": [
+                    {
+                        "Type": "forward",
+                        "TargetGroupArn": {
+                            "Ref": "TargetGroup"
+                        }
+                    }
+                ]
+            }
+        },
+        "RecordSet": {
+            "Type": "AWS::Route53::RecordSet",
+            "Properties": {
+                "HostedZoneName": "alphaea.uk.",
+                "Name": { "Fn::Join": 
+                	[ "", [
+                		{ "Ref": "SubDomainName" },
+                		".alphaea.uk."
+                	] ]
+				},
+                "Type": "A",
+                "AliasTarget": {
+				  "DNSName" : { "Fn::GetAtt": [ "LoadBalancer", "DNSName" ] },
+				  "EvaluateTargetHealth" : false,
+				  "HostedZoneId" : { "Fn::GetAtt": [ "LoadBalancer", "CanonicalHostedZoneID" ] }
+				}
+            }
+        }
+    },
+    "Parameters" : {
+		"SubDomainName" : {
+			"Type" : "String",
+			"Description" : "The sub domain name part of <SubDomainName>.alphaea.uk"
+		},
+		"Ami" : {
+			"Type" : "String",
+			"Default": "ami-e487179d"
+		},
+		"InstanceType" : {
+			"Type" : "String",
+			"Default" : "t2.micro",
+			"AllowedValues" : ["t2.micro", "m1.small", "m1.large"],
+			"Description" : "Enter t2.micro, m1.small, or m1.large. Default is t2.micro."
+		},
+		"GroupId" : {
+			"Type" : "String",
+			"Default" : "uk.alphaea.dev",
+			"Description" : "Maven artifact group"
+		},
+		"ArtifactId" : {
+			"Type" : "String",
+			"Description" : "Maven artifact id"
+		},
+		"ArtifactVersion" : {
+			"Type" : "String",
+			"Description" : "Maven artifact version"
+		},
+		"AccessKey" : {
+			"Type" : "String",
+			"Description" : "Access Key"
+		},
+		"SecretKey" : {
+			"Type" : "String",
+			"Description" : "Secret Key"
+		},
+		"Env" : {
+			"Type" : "String",
+			"Description" : "Environment"
+		},
+		"BootstrapScriptName" : {
+			"Type" : "String",
+			"Default": "spring-boot-bootstrap",
+			"Description" : "Name of Bootstrap script"
+		},
+		"InstancePort" : {
+			"Type" : "Number",
+			"Default": "8080",
+			"Description" : "Port that the EC2 instances expose to the load balancer"
+		},
+		"IamRole" : {
+			"Type" : "String",
+			"Default": "ec2-spring-boot-node",
+			"Description": "IAM Role for the EC2 instance"
+		}
+	}
+}

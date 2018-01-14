@@ -1,0 +1,176 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Resources": {
+        "LaunchConfiguration": {
+            "Type": "AWS::AutoScaling::LaunchConfiguration",
+            "Properties": {
+                "ImageId": { "Ref": "Ami" },
+                "KeyName": "IrelandKeyPair",
+                "SecurityGroups": [
+                    "sg-445f6c3f",
+                    "sg-624c0219"
+                ],
+                "InstanceType": { "Ref": "InstanceType" },
+                "InstanceMonitoring": false,
+                "IamInstanceProfile": { "Ref": "IamRole" },
+                "EbsOptimized": false,
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash\n",
+                                "aws s3 cp s3://alphaea-uk-scripts/",
+                                { "Ref": "BootstrapScriptName" },
+                                " /bootstrap.sh\n",
+                                "chmod 700 /bootstrap.sh\n",
+                                "/bootstrap.sh\n"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "AutoScalingGroup": {
+            "Type": "AWS::AutoScaling::AutoScalingGroup",
+            "Properties": {
+                "LaunchConfigurationName": {
+                    "Ref": "LaunchConfiguration"
+                },
+                "TargetGroupARNs": [
+                    {
+                        "Ref": "TargetGroup"
+                    }
+                ],
+                "MaxSize": 1,
+                "MinSize": 1,
+                "DesiredCapacity": 1,
+                "Cooldown": 300,
+                "AvailabilityZones": { "Fn::GetAZs" : { "Ref" : "AWS::Region" } },
+                "HealthCheckType": "EC2",
+                "HealthCheckGracePeriod": 300,
+                "Tags": [
+                    {
+                        "Key": "EfsName",
+                        "Value": { "Ref": "EfsName" },
+                        "PropagateAtLaunch": true
+                    },
+                    {
+                        "Key": "Name",
+                        "Value": { "Ref": "SubDomainName" },
+                        "PropagateAtLaunch": true
+                    }
+                ],
+                "TerminationPolicies": [
+                    "Default"
+                ]
+            }
+        },
+        "TargetGroup": {
+            "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+            "Properties": {
+                "Port": { "Ref" : "InstancePort" },
+                "Protocol": "HTTP",
+            	"VpcId": "vpc-6bc5d80c",
+	            "HealthCheckProtocol": "HTTP",
+	            "HealthCheckPort": "traffic-port",
+	            "HealthCheckIntervalSeconds": 30,
+	            "HealthCheckTimeoutSeconds": 5,
+	            "HealthyThresholdCount": 5,
+	            "UnhealthyThresholdCount": 2,
+	            "HealthCheckPath": "/",
+	            "Matcher": {
+	                "HttpCode": "200"
+	            },
+	            "TargetType": "instance"
+	        }
+        },
+        "LoadBalancer": {
+            "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+            "Properties": {
+                "Scheme": "internet-facing",
+                "Type": "application",
+                "Subnets": [
+                	"subnet-2f787d48",
+                	"subnet-4191d71a",
+                	"subnet-9b2a24d2"
+                ],
+                "SecurityGroups": [
+                    "sg-de3201a5"
+                ],
+                "IpAddressType": "ipv4"
+            }
+        },
+        "Listener": {
+            "Type": "AWS::ElasticLoadBalancingV2::Listener",
+            "Properties": {
+                "LoadBalancerArn": {
+                    "Ref": "LoadBalancer"
+                },
+                "Port": 80,
+                "Protocol": "HTTP",
+                "DefaultActions": [
+                    {
+                        "Type": "forward",
+                        "TargetGroupArn": {
+                            "Ref": "TargetGroup"
+                        }
+                    }
+                ]
+            }
+        },
+        "RecordSet": {
+            "Type": "AWS::Route53::RecordSet",
+            "Properties": {
+                "HostedZoneName": "alphaea.uk.",
+                "Name": { "Fn::Join": 
+                	[ "", [
+                		{ "Ref": "SubDomainName" },
+                		".alphaea.uk."
+                	] ]
+				},
+                "Type": "A",
+                "AliasTarget": {
+				  "DNSName" : { "Fn::GetAtt": [ "LoadBalancer", "DNSName" ] },
+				  "EvaluateTargetHealth" : false,
+				  "HostedZoneId" : { "Fn::GetAtt": [ "LoadBalancer", "CanonicalHostedZoneID" ] }
+				}
+            }
+        }
+    },
+    "Parameters" : {
+		"SubDomainName" : {
+			"Type" : "String",
+			"Description" : "The sub domain name part of <SubDomainName>.alphaea.uk"
+		},
+		"Ami" : {
+			"Type" : "String",
+			"Default": "ami-e487179d"
+		},
+		"InstanceType" : {
+			"Type" : "String",
+			"Default" : "t2.medium",
+			"AllowedValues" : ["t2.micro", "m1.small", "m1.large", "t2.medium"],
+			"Description" : "Enter t2.micro, m1.small, or m1.large. Default is t2.medium."
+		},
+		"BootstrapScriptName" : {
+			"Type" : "String",
+			"Default": "nexus-bootstrap",
+			"Description" : "Name of Bootstrap script"
+		},
+		"InstancePort" : {
+			"Type" : "Number",
+			"Default": "8081",
+			"Description" : "Port that the EC2 instances expose to the load balancer"
+		},
+		"IamRole" : {
+			"Type" : "String",
+			"Default": "ec2-nexus-server",
+			"Description": "IAM Role for the EC2 instance"
+		},
+		"EfsName" : {
+			"Type" : "String",
+			"Description": "Name of the EFS instance to bind to"
+		}
+	}
+}
