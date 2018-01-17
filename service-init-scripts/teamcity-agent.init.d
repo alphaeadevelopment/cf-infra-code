@@ -9,9 +9,9 @@
 # Description:       Enable service provided by daemon.
 ### END INIT INFO
 
-dir=/opt/node/$(cat /etc/node_module)
-cmd="NODE_ENV=production PORT=$(cat /etc/node_port) npm run serve"
-user=node
+dir=/opt/teamcity
+cmd="bin/agent.sh start"
+user=teamcity
 
 name=`basename $0`
 pid_file="/var/run/$name.pid"
