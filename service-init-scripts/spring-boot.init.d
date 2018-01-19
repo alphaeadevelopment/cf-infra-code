@@ -10,7 +10,7 @@
 ### END INIT INFO
 
 dir=/home/ec2-user
-cmd="java8 -Dspring.profiles.active=$(cat /etc/spring_boot_env) -DartifactVersion=$(cat /etc/artifact_version) -DawsAccessKey=$(cat /etc/access_key) -DawsSecretKey=$(cat /etc/secret_key) -jar $dir/spring-boot.jar"
+cmd="java $(cat /etc/spring-boot-system-variables) -DawsSecretKey=$(cat /etc/secret_key) -jar $dir/spring-boot.jar"
 user=ec2-user
 
 name=`basename $0`
