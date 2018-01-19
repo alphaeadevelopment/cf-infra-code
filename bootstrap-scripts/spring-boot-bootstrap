@@ -16,7 +16,7 @@ jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="ArtifactId")'.Value /et
 jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="AccessKey")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/access_key
 jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="SecretKey")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/secret_key
 jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="Env")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/spring_boot_env
-jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="SystemVariables")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/spring-boot-system-variables
+jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="SystemProperties")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/spring-boot-system-properties
 
 curl -X GET --header 'Accept: application/json' "$NEXUS_SERVER/service/siesta/rest/beta/search/assets?repository=maven-releases&group=$(cat /etc/group_id)&name=$(cat /etc/artifact_id)&version=$(cat /etc/artifact_version)&maven.extension=jar" | jq .items[0].downloadUrl | awk -F "\"" '{print $2}' > /etc/artifact_url 2>/dev/null
 wget $(cat /etc/artifact_url) -O /home/ec2-user/spring-boot.jar
