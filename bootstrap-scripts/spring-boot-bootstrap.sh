@@ -1,0 +1,27 @@
+#!/bin/bash
+yum update -y
+yum install -y java-1.8.0-openjdk-headless.x86_64 jq
+
+NEXUS_SERVER=http://nexus.alphaea.uk
+
+curl http://169.254.169.254/latest/meta-data/placement/availability-zone > /etc/az 2>/dev/null
+echo $(cat /etc/az) > /etc/az
+cat /etc/az | (read h; echo ${h:0:-1}) > /etc/region
+curl -H "Accept: application/json" http://169.254.169.254/latest/meta-data/instance-id > /etc/instance_id 2>/dev/null
+aws ec2 describe-instances --region $(cat /etc/region) --filter Name=instance-id,Values=$(cat /etc/instance_id) > /etc/instance_details 2>/dev/null
+jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="ArtifactVersion")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/artifact_version
+jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="GroupId")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/group_id
+jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="ArtifactId")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/artifact_id
+jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="AccessKey")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/access_key
+jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="SecretKey")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/secret_key
+jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="Env")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/spring_boot_env
+
+curl -X GET --header 'Accept: application/json' "$NEXUS_SERVER/service/siesta/rest/beta/search/assets?repository=maven-releases&group=$(cat /etc/group_id)&name=$(cat /etc/artifact_id)&version=$(cat /etc/artifact_version)&maven.extension=jar" | jq .items[0].downloadUrl | awk -F "\"" '{print $2}' > /etc/artifact_url 2>/dev/null
+wget $(cat /etc/artifact_url) -O /home/ec2-user/spring-boot.jar
+chown ec2-user:ec2-user /home/ec2-user/spring-boot.jar
+
+aws s3 cp s3://alphaea-uk-scripts/spring-boot.init.d /etc/init.d/spring-boot
+chmod 750 /etc/init.d/spring-boot
+
+service spring-boot start
+chkconfig spring-boot on
