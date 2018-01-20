@@ -26,8 +26,8 @@ NPM_REPO_NAME=npm-releases
 cd ${HOME_DIR}
 npm config set @alphaeadev:registry ${NEXUS_SERVER}/repository/${NPM_REPO_NAME}/
 git clone https://github.com/alphaeadevelopment/${NODE_MODULE}.git
-git checkout $(cat /etc/node_git_tag)
 cd ${NODE_MODULE}
+git checkout $(cat /etc/node_git_tag)
 npm install && NODE_ENV=production npm run build
 
 chown -R node:node .
