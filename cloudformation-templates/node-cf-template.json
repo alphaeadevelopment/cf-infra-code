@@ -62,6 +62,13 @@
         "HealthCheckGracePeriod": 300,
         "Tags": [
           {
+            "Key": "NodeEnvVars",
+            "Value": {
+              "Ref": "EnvVars"
+            },
+            "PropagateAtLaunch": true
+          },
+          {
             "Key": "NodeModule",
             "Value": {
               "Ref": "NodeModule"
@@ -221,6 +228,11 @@
     "Env": {
       "Type": "String",
       "Description": "Environment"
+    },
+    "EnvVars": {
+      "Type": "String",
+      "Defualt": "",
+      "Description": "Environment variables to pass to the node process"
     }
   }
 }

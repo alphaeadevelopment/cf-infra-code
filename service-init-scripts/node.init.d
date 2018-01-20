@@ -10,7 +10,7 @@
 ### END INIT INFO
 
 dir=/opt/node/$(cat /etc/node_module)
-cmd="NODE_ENV=production PORT=$(cat /etc/node_port) npm run serve"
+cmd="$(cat /etc/node_env_vars) npm run serve"
 user=node
 
 name=`basename $0`

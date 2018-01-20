@@ -4,9 +4,11 @@ function exit_error() {
     exit 1
 }
 
+DEFAULT_BUCKET=alphaea-uk-scripts
+
 function usage() {
     echo "usage:  `basename "$0"` <options>"
-    echo "  -b              S3 bucket name"
+    echo "  -b              S3 bucket name (default: ${DEFAULT_BUCKET})"
     echo "  -h              Print this usage and exit"
 
   if [[ $# == 0 ]]; then exit 1;
@@ -14,6 +16,7 @@ function usage() {
   fi
 }
 
+bucket=${DEFAULT_BUCKET}
 # Read cmd line arguments
 while [ $# -gt 0 ]; do
     case "$1" in
