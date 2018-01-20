@@ -76,6 +76,13 @@
             "PropagateAtLaunch": true
           },
           {
+            "Key": "Tag",
+            "Value": {
+              "Ref": "Tag"
+            },
+            "PropagateAtLaunch": true
+          },
+          {
             "Key": "Name",
             "Value": {
               "Fn::Join": [
@@ -233,6 +240,10 @@
       "Type": "String",
       "Default": "",
       "Description": "Environment variables to pass to the node process"
+    },
+    "Tag": {
+      "Type": "String",
+      "Description": "git tag"
     }
   }
 }
