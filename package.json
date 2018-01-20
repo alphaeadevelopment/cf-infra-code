@@ -4,10 +4,9 @@
   "description": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "deploy": "npm version patch && git push && cross-env VERSION=`jq .version package.json` npm run publish",
-    "publish": "npm run publish:git && npm run publish:npm && npm run publish:s3",
+    "deploy": "npm version patch && git push && git push --tags && cross-env VERSION=`jq .version package.json` npm run publish",
+    "publish": "npm run publish:npm && npm run publish:s3",
     "publish:npm": "npm publish",
-    "publish:git": "git tag v${VERSION} && git push --tags",
     "publish:s3": "./deploy.sh"
   },
   "repository": {
