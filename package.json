@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/alphaeadevelopment/cf-infra-code/issues"
   },
-  "homepage": "https://github.com/alphaeadevelopment/cf-infra-code#readme"
+  "homepage": "https://github.com/alphaeadevelopment/cf-infra-code#readme",
+  "devDependencies": {
+    "cross-env": "^5.1.3"
+  }
 }
