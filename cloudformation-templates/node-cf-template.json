@@ -108,9 +108,9 @@
         "VpcId": "vpc-6bc5d80c",
         "HealthCheckProtocol": "HTTP",
         "HealthCheckPort": "traffic-port",
-        "HealthCheckIntervalSeconds": 30,
-        "HealthCheckTimeoutSeconds": 5,
-        "HealthyThresholdCount": 5,
+        "HealthCheckIntervalSeconds": 10,
+        "HealthCheckTimeoutSeconds": 2,
+        "HealthyThresholdCount": 2,
         "UnhealthyThresholdCount": 2,
         "HealthCheckPath": "/ping",
         "Matcher": {
