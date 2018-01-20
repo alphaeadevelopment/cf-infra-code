@@ -231,7 +231,7 @@
     },
     "EnvVars": {
       "Type": "String",
-      "Defualt": "",
+      "Default": "",
       "Description": "Environment variables to pass to the node process"
     }
   }
