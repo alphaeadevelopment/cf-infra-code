@@ -8,7 +8,7 @@ npm install -g nodemon
 HOME_DIR=/opt/node
 
 groupadd node
-useradd node -g -m -d ${HOME_DIR}
+useradd -g node -m -d ${HOME_DIR} node
 
 curl -w "\n" http://169.254.169.254/latest/meta-data/placement/availability-zone > /etc/az 2>/dev/null
 cat /etc/az | (read h; echo ${h:0:-1}) > /etc/region
