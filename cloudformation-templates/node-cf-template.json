@@ -76,9 +76,9 @@
             "PropagateAtLaunch": true
           },
           {
-            "Key": "Tag",
+            "Key": "GitTag",
             "Value": {
-              "Ref": "Tag"
+              "Ref": "GitTag"
             },
             "PropagateAtLaunch": true
           },
@@ -241,7 +241,7 @@
       "Default": "",
       "Description": "Environment variables to pass to the node process"
     },
-    "Tag": {
+    "GitTag": {
       "Type": "String",
       "Description": "git tag"
     }

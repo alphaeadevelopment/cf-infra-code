@@ -17,7 +17,7 @@ aws ec2 describe-instances --region $(cat /etc/region) --filter Name=instance-id
 jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="Port")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/node_port
 jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="NodeModule")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/node_module
 jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="NodeEnvVars")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/node_env_vars
-jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="Tag")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/node_git_tag
+jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="GitTag")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/node_git_tag
 
 NODE_MODULE=$(cat /etc/node_module)
 NEXUS_SERVER=http://nexus.alphaea.uk
