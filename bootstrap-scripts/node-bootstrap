@@ -5,6 +5,12 @@ curl --silent --location https://rpm.nodesource.com/setup_8.x | bash -
 yum -y install nodejs git jq
 npm install -g nodemon
 
+aws s3 cp s3://alphaea-uk-scripts/inputrc .
+cat inputrc >> /etc/inputrc
+
+aws s3 cp s3://alphaea-uk-scripts/motd.node /etc/motd
+
+
 HOME_DIR=/opt/node
 
 groupadd node

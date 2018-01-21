@@ -3,6 +3,11 @@ yum update -y
 yum install -y java-1.8.0-openjdk-headless.x86_64 jq
 update-alternatives --set java /usr/lib/jvm/jre-1.8.0-openjdk.x86_64/bin/java
 
+aws s3 cp s3://alphaea-uk-scripts/inputrc .
+cat inputrc >> /etc/inputrc
+
+aws s3 cp s3://alphaea-uk-scripts/motd.spring-boot /etc/motd
+
 NEXUS_SERVER=http://nexus.alphaea.uk
 
 curl http://169.254.169.254/latest/meta-data/placement/availability-zone > /etc/az 2>/dev/null
