@@ -1,0 +1,120 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "TargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "Port": {
+          "Ref": "InstancePort"
+        },
+        "Protocol": "HTTP",
+        "VpcId": "vpc-6bc5d80c",
+        "HealthCheckProtocol": "HTTP",
+        "HealthCheckPort": "traffic-port",
+        "HealthCheckIntervalSeconds": 10,
+        "HealthCheckTimeoutSeconds": 2,
+        "HealthyThresholdCount": 2,
+        "UnhealthyThresholdCount": 2,
+        "HealthCheckPath": "/ping",
+        "Matcher": {
+          "HttpCode": "200"
+        },
+        "TargetType": "instance"
+      }
+    },
+    "LoadBalancer": {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "Scheme": "internet-facing",
+        "Type": "application",
+        "Subnets": [
+          "subnet-2f787d48",
+          "subnet-4191d71a",
+          "subnet-9b2a24d2"
+        ],
+        "SecurityGroups": [
+          "sg-624c0219"
+        ],
+        "IpAddressType": "ipv4"
+      }
+    },
+    "Listener": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "LoadBalancerArn": {
+          "Ref": "LoadBalancer"
+        },
+        "Port": 80,
+        "Protocol": "HTTP",
+        "DefaultActions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "TargetGroup"
+            }
+          }
+        ]
+      }
+    },
+    "RecordSet": {
+      "Type": "AWS::Route53::RecordSet",
+      "Properties": {
+        "HostedZoneName": "alphaea.uk.",
+        "Name": {
+          "Fn::Join": [
+            "",
+            [
+              {
+                "Ref": "SubDomainName"
+              },
+              ".alphaea.uk."
+            ]
+          ]
+        },
+        "Type": "A",
+        "AliasTarget": {
+          "DNSName": {
+            "Fn::GetAtt": [
+              "LoadBalancer",
+              "DNSName"
+            ]
+          },
+          "EvaluateTargetHealth": false,
+          "HostedZoneId": {
+            "Fn::GetAtt": [
+              "LoadBalancer",
+              "CanonicalHostedZoneID"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "SubDomainName": {
+      "Type": "String",
+      "Description": "The sub domain name part of <SubDomainName>.alphaea.uk"
+    },
+    "Env": {
+      "Type": "String",
+      "Description": "Environment"
+    },
+    "InstancePort": {
+      "Type": "String",
+      "Description": "Port"
+    }
+  },
+  "Outputs": {
+    "TargetGroup": {
+      "Description": "TargetGroup",
+      "Value": {
+        "Ref": "TargetGroup"
+      },
+      "Export": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-TargetGroup"
+        }
+      }
+    }
+  }
+}

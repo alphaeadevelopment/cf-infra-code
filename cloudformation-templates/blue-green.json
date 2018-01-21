@@ -1,0 +1,279 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Resources": {
+    "LaunchConfiguration": {
+      "Type": "AWS::AutoScaling::LaunchConfiguration",
+      "Properties": {
+        "ImageId": {
+          "Ref": "Ami"
+        },
+        "KeyName": "IrelandKeyPair",
+        "SecurityGroups": [
+          "sg-048b9c7f"
+        ],
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "InstanceMonitoring": false,
+        "IamInstanceProfile": {
+          "Ref": "IamRole"
+        },
+        "EbsOptimized": false,
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash\n",
+                "aws s3 cp s3://alphaea-uk-scripts/",
+                {
+                  "Ref": "BootstrapScriptName"
+                },
+                " /bootstrap.sh\n",
+                "chmod 700 /bootstrap.sh\n",
+                "/bootstrap.sh\n"
+              ]
+            ]
+          }
+        }
+      }
+    },
+    "AutoScalingGroup": {
+      "Type": "AWS::AutoScaling::AutoScalingGroup",
+      "Properties": {
+        "LaunchConfigurationName": {
+          "Ref": "LaunchConfiguration"
+        },
+        "TargetGroupARNs": [
+          {
+            "Fn::ImportValue": {
+              "Fn::Sub": "${LoadBalancerStackName}-TargetGroup"
+            }
+          },
+          {
+            "Ref": "TargetGroup"
+          }
+        ],
+        "MaxSize": 2,
+        "MinSize": 2,
+        "DesiredCapacity": 2,
+        "Cooldown": 300,
+        "AvailabilityZones": {
+          "Fn::GetAZs": {
+            "Ref": "AWS::Region"
+          }
+        },
+        "HealthCheckType": "EC2",
+        "HealthCheckGracePeriod": 300,
+        "Tags": [
+          {
+            "Key": "BuildEnv",
+            "Value": {
+              "Ref": "BuildEnv"
+            },
+            "PropagateAtLaunch": true
+          },
+          {
+            "Key": "NodeEnvVars",
+            "Value": {
+              "Ref": "EnvVars"
+            },
+            "PropagateAtLaunch": true
+          },
+          {
+            "Key": "NodeModule",
+            "Value": {
+              "Ref": "NodeModule"
+            },
+            "PropagateAtLaunch": true
+          },
+          {
+            "Key": "GitTag",
+            "Value": {
+              "Ref": "GitTag"
+            },
+            "PropagateAtLaunch": true
+          },
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "NodeModule"
+                  },
+                  {
+                    "Ref": "Env"
+                  }
+                ]
+              ]
+            },
+            "PropagateAtLaunch": true
+          }
+        ],
+        "TerminationPolicies": [
+          "Default"
+        ]
+      }
+    },
+    "TargetGroup": {
+      "Type": "AWS::ElasticLoadBalancingV2::TargetGroup",
+      "Properties": {
+        "Port": {
+          "Ref": "InstancePort"
+        },
+        "Protocol": "HTTP",
+        "VpcId": "vpc-6bc5d80c",
+        "HealthCheckProtocol": "HTTP",
+        "HealthCheckPort": "traffic-port",
+        "HealthCheckIntervalSeconds": 10,
+        "HealthCheckTimeoutSeconds": 2,
+        "HealthyThresholdCount": 2,
+        "UnhealthyThresholdCount": 2,
+        "HealthCheckPath": "/ping",
+        "Matcher": {
+          "HttpCode": "200"
+        },
+        "TargetType": "instance"
+      }
+    },
+    "LoadBalancer": {
+      "Type": "AWS::ElasticLoadBalancingV2::LoadBalancer",
+      "Properties": {
+        "Scheme": "internet-facing",
+        "Type": "application",
+        "Subnets": [
+          "subnet-2f787d48",
+          "subnet-4191d71a",
+          "subnet-9b2a24d2"
+        ],
+        "SecurityGroups": [
+          "sg-d0a24faa"
+        ],
+        "IpAddressType": "ipv4"
+      }
+    },
+    "Listener": {
+      "Type": "AWS::ElasticLoadBalancingV2::Listener",
+      "Properties": {
+        "LoadBalancerArn": {
+          "Ref": "LoadBalancer"
+        },
+        "Port": 80,
+        "Protocol": "HTTP",
+        "DefaultActions": [
+          {
+            "Type": "forward",
+            "TargetGroupArn": {
+              "Ref": "TargetGroup"
+            }
+          }
+        ]
+      }
+    },
+    "RecordSet": {
+      "Type": "AWS::Route53::RecordSet",
+      "Properties": {
+        "HostedZoneName": "alphaea.uk.",
+        "Name": {
+          "Fn::Join": [
+            "",
+            [
+              {
+                "Ref": "SubDomainName"
+              },
+              ".alphaea.uk."
+            ]
+          ]
+        },
+        "Type": "A",
+        "AliasTarget": {
+          "DNSName": {
+            "Fn::GetAtt": [
+              "LoadBalancer",
+              "DNSName"
+            ]
+          },
+          "EvaluateTargetHealth": false,
+          "HostedZoneId": {
+            "Fn::GetAtt": [
+              "LoadBalancer",
+              "CanonicalHostedZoneID"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "Parameters": {
+    "Ami": {
+      "Type": "String",
+      "Default": "ami-e487179d"
+    },
+    "InstanceType": {
+      "Type": "String",
+      "Default": "t2.micro",
+      "AllowedValues": [
+        "t2.micro",
+        "m1.small",
+        "m1.large"
+      ],
+      "Description": "Enter t2.micro, m1.small, or m1.large. Default is t2.micro."
+    },
+    "NodeModule": {
+      "Type": "String",
+      "Description": "The node module name"
+    },
+    "BootstrapScriptName": {
+      "Type": "String",
+      "Default": "node-bootstrap",
+      "Description": "Name of Bootstrap script"
+    },
+    "IamRole": {
+      "Type": "String",
+      "Default": "ec2-node-server-role",
+      "Description": "IAM Role for the EC2 instance"
+    },
+    "Env": {
+      "Type": "String",
+      "Description": "Environment"
+    },
+    "EnvVars": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Environment variables to pass to the node process"
+    },
+    "GitTag": {
+      "Type": "String",
+      "Description": "git tag"
+    },
+    "BuildEnv": {
+      "Type": "String",
+      "Description": "git tag"
+    },
+    "LoadBalancerStackName": {
+      "Type": "String",
+      "Description": "Stack to bind this Auto Scaling Group to"
+    },
+    "InstancePort": {
+      "Type": "String",
+      "Description": "Port"
+    },
+    "SubDomainName": {
+      "Type": "String",
+      "Description": "SubDomainName"
+    }
+  },
+  "Outputs": {
+    "LoadBalancerDNS": {
+      "Description": "LoadBalancerDNS",
+      "Value": {
+        "Fn::GetAtt": [
+          "LoadBalancer",
+          "DNSName"
+        ]
+      }
+    }
+  }
+}
