@@ -62,6 +62,13 @@
         "HealthCheckGracePeriod": 300,
         "Tags": [
           {
+            "Key": "BuildEnv",
+            "Value": {
+              "Ref": "BuildEnv"
+            },
+            "PropagateAtLaunch": true
+          },
+          {
             "Key": "NodeEnvVars",
             "Value": {
               "Ref": "EnvVars"
@@ -242,6 +249,10 @@
       "Description": "Environment variables to pass to the node process"
     },
     "GitTag": {
+      "Type": "String",
+      "Description": "git tag"
+    },
+    "BuildEnv": {
       "Type": "String",
       "Description": "git tag"
     }

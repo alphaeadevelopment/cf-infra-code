@@ -18,6 +18,7 @@ jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="Port")'.Value /etc/inst
 jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="NodeModule")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/node_module
 jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="NodeEnvVars")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/node_env_vars
 jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="GitTag")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/node_git_tag
+jq '.Reservations[0].Instances[0].Tags[] | select(.Key=="BuildEnv")'.Value /etc/instance_details | awk -F "\"" '{print $2}' > /etc/node_build_env
 
 NODE_MODULE=$(cat /etc/node_module)
 NEXUS_SERVER=http://nexus.alphaea.uk
@@ -28,7 +29,7 @@ npm config set @alphaeadev:registry ${NEXUS_SERVER}/repository/${NPM_REPO_NAME}/
 git clone https://github.com/alphaeadevelopment/${NODE_MODULE}.git
 cd ${NODE_MODULE}
 git checkout $(cat /etc/node_git_tag)
-npm install && NODE_ENV=production npm run build
+npm install && ENV=$(cat /etc/node_build_env) NODE_ENV=production npm run build
 
 chown -R node:node .
 
