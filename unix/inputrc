@@ -1,0 +1,18 @@
+"∫": backward-word
+"[D": backward-word
+"\e\e[[D" backward-word
+
+
+"\e\e[C": forward-word
+"\e[1;5C": forward-word
+"ƒ": forward-word
+
+"ç": upcase-word
+
+"∂": kill-word
+
+
+"�": backward-kill-word
+
+
+"�": kill-word
